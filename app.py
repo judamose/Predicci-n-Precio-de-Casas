@@ -29,7 +29,17 @@ except Exception as e:
 # URL DEL DEPLOYMENT
 # =====================================================
 
-API_URL = "TU_URL_DE_PREDICCION_DATAROBOT"
+API_TOKEN = st.secrets["DATAROBOT_API_KEY"]
+DEPLOYMENT_ID = st.secrets["DATAROBOT_DEPLOYMENT_ID"]
+HOST = st.secrets["DATAROBOT_HOST"]
+
+API_URL = (
+    f"{HOST}/predApi/v1.0/deployments/"
+    f"{DEPLOYMENT_ID}/predictions"
+)
+
+st.write("URL utilizada:")
+st.code(API_URL)
 
 # =====================================================
 # FORMULARIO
