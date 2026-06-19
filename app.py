@@ -131,9 +131,9 @@ if st.button("🔍 Predecir"):
     st.json(datos)
 
     headers = {
-        "Authorization": f"Token {API_TOKEN}",
-        "Content-Type": "application/json"
-    }
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+            }
 
     try:
 
