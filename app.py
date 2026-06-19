@@ -1,53 +1,92 @@
 import streamlit as st
 import pandas as pd
 import requests
-import json
 
-# =====================================
-# CONFIGURACIÓN DATAROBOT
-# =====================================
+# =====================================================
+# CONFIGURACIÓN DE LA PÁGINA
+# =====================================================
 
-API_URL = "PEGA_AQUI_TU_PREDICTION_URL"
-
-API_TOKEN = st.secrets["DATAROBOT_API_TOKEN"]
-
-# =====================================
-# INTERFAZ
-# =====================================
+st.set_page_config(
+    page_title="Predicción Precio de Viviendas",
+    page_icon="🏠",
+    layout="wide"
+)
 
 st.title("🏠 Predicción de Precio de Viviendas")
+
+# =====================================================
+# VERIFICAR TOKEN
+# =====================================================
+
+try:
+    API_TOKEN = st.secrets["DATAROBOT_API_TOKEN"]
+    st.success("Conexión con secretos OK")
+except Exception as e:
+    st.error("No se encontró DATAROBOT_API_TOKEN en Secrets")
+    st.stop()
+
+# =====================================================
+# URL DEL DEPLOYMENT
+# =====================================================
+
+API_URL = "TU_URL_DE_PREDICCION_DATAROBOT"
+
+# =====================================================
+# FORMULARIO
+# =====================================================
 
 col1, col2 = st.columns(2)
 
 with col1:
-    longitud = st.number_input("Longitud", value=-122.23)
-    latitud = st.number_input("Latitud", value=37.88)
-    edad_mediana = st.number_input("Edad Mediana Vivienda", value=20)
+
+    longitud = st.number_input(
+        "Longitud",
+        value=-122.23,
+        format="%.4f"
+    )
+
+    latitud = st.number_input(
+        "Latitud",
+        value=37.88,
+        format="%.4f"
+    )
+
+    edad_mediana = st.number_input(
+        "Edad Mediana Vivienda",
+        min_value=1,
+        value=20
+    )
 
     total_habitaciones = st.number_input(
         "Total Habitaciones",
-        value=1000
+        min_value=1,
+        value=1500
     )
 
 with col2:
+
     total_bedrooms = st.number_input(
         "Total Dormitorios",
-        value=200
+        min_value=1,
+        value=300
     )
 
     poblacion = st.number_input(
         "Población",
-        value=800
+        min_value=1,
+        value=1000
     )
 
     hogares = st.number_input(
         "Hogares",
-        value=300
+        min_value=1,
+        value=350
     )
 
     ingreso_mediano = st.number_input(
         "Ingreso Mediano",
-        value=4.5
+        min_value=0.0,
+        value=5.0
     )
 
 proximidad_oceano = st.selectbox(
@@ -61,11 +100,11 @@ proximidad_oceano = st.selectbox(
     ]
 )
 
-# =====================================
-# PREDICCIÓN
-# =====================================
+# =====================================================
+# BOTÓN
+# =====================================================
 
-if st.button("Predecir"):
+if st.button("🔍 Predecir"):
 
     datos = [{
         "Longitud": longitud,
@@ -79,29 +118,54 @@ if st.button("Predecir"):
         "Proximidad_Oceano": proximidad_oceano
     }]
 
+    st.write("Datos enviados:")
+    st.json(datos)
+
     headers = {
         "Authorization": f"Bearer {API_TOKEN}",
         "Content-Type": "application/json"
     }
 
-    response = requests.post(
-        API_URL,
-        headers=headers,
-        data=json.dumps(datos)
-    )
+    try:
 
-    if response.status_code == 200:
+        with st.spinner("Consultando DataRobot..."):
 
-        resultado = response.json()
+            response = requests.post(
+                API_URL,
+                headers=headers,
+                json=datos,
+                timeout=30
+            )
 
-        st.success("Predicción realizada")
+        st.write("Código HTTP:", response.status_code)
 
-        st.json(resultado)
+        if response.status_code == 200:
 
-    else:
+            resultado = response.json()
+
+            st.success("Predicción obtenida")
+
+            st.subheader("Resultado")
+
+            st.json(resultado)
+
+        else:
+
+            st.error(
+                f"Error HTTP {response.status_code}"
+            )
+
+            st.code(response.text)
+
+    except requests.exceptions.Timeout:
 
         st.error(
-            f"Error {response.status_code}"
+            "Tiempo de espera agotado. "
+            "Verifica la URL del Deployment."
         )
 
-        st.write(response.text)
+    except Exception as e:
+
+        st.error("Error inesperado")
+
+        st.exception(e)
