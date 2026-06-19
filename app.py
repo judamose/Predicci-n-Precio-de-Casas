@@ -19,7 +19,7 @@ st.title("🏠 Predicción de Precio de Viviendas")
 # =====================================================
 
 try:
-    API_TOKEN = st.secrets["DATAROBOT_API_TOKEN"]
+    API_TOKEN = st.secrets["DATAROBOT_API_KEY"]
     st.success("Conexión con secretos OK")
 except Exception as e:
     st.error("No se encontró DATAROBOT_API_TOKEN en Secrets")
