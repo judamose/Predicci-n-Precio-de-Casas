@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import requests
 
 # =====================================================
@@ -15,23 +14,23 @@ st.set_page_config(
 st.title("🏠 Predicción de Precio de Viviendas")
 
 # =====================================================
-# VERIFICAR TOKEN
+# LEER SECRETOS
 # =====================================================
 
 try:
     API_TOKEN = st.secrets["DATAROBOT_API_KEY"]
-    st.success("Conexión con secretos OK")
+    DEPLOYMENT_ID = st.secrets["DATAROBOT_DEPLOYMENT_ID"]
+    HOST = st.secrets["DATAROBOT_HOST"]
+
+    st.success("Conexión con Secrets OK")
+
 except Exception as e:
-    st.error("No se encontró DATAROBOT_API_TOKEN en Secrets")
+    st.error(f"Error leyendo Secrets: {e}")
     st.stop()
 
 # =====================================================
 # URL DEL DEPLOYMENT
 # =====================================================
-
-API_TOKEN = st.secrets["DATAROBOT_API_KEY"]
-DEPLOYMENT_ID = st.secrets["DATAROBOT_DEPLOYMENT_ID"]
-HOST = st.secrets["DATAROBOT_HOST"]
 
 API_URL = (
     f"{HOST}/predApi/v1.0/deployments/"
@@ -111,7 +110,7 @@ proximidad_oceano = st.selectbox(
 )
 
 # =====================================================
-# BOTÓN
+# BOTÓN DE PREDICCIÓN
 # =====================================================
 
 if st.button("🔍 Predecir"):
@@ -128,11 +127,11 @@ if st.button("🔍 Predecir"):
         "Proximidad_Oceano": proximidad_oceano
     }]
 
-    st.write("Datos enviados:")
+    st.subheader("Datos enviados")
     st.json(datos)
 
     headers = {
-        "Authorization": f"Bearer {API_TOKEN}",
+        "Authorization": f"Token {API_TOKEN}",
         "Content-Type": "application/json"
     }
 
@@ -147,13 +146,22 @@ if st.button("🔍 Predecir"):
                 timeout=30
             )
 
-        st.write("Código HTTP:", response.status_code)
+        st.subheader("Diagnóstico")
+
+        st.write("Status Code:")
+        st.write(response.status_code)
+
+        st.write("Headers enviados:")
+        st.json(headers)
+
+        st.write("Respuesta completa:")
+        st.text(response.text)
 
         if response.status_code == 200:
 
             resultado = response.json()
 
-            st.success("Predicción obtenida")
+            st.success("Predicción obtenida correctamente")
 
             st.subheader("Resultado")
 
@@ -162,16 +170,13 @@ if st.button("🔍 Predecir"):
         else:
 
             st.error(
-                f"Error HTTP {response.status_code}"
+                f"DataRobot respondió con HTTP {response.status_code}"
             )
-
-            st.code(response.text)
 
     except requests.exceptions.Timeout:
 
         st.error(
-            "Tiempo de espera agotado. "
-            "Verifica la URL del Deployment."
+            "Timeout al conectar con DataRobot."
         )
 
     except Exception as e:
