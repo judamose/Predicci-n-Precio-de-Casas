@@ -1,91 +1,55 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import requests
+import json
 
-# ==========================
-# Cargar modelo entrenado
-# ==========================
-modelo = joblib.load("modelo.pkl")
+# =====================================
+# CONFIGURACIÓN DATAROBOT
+# =====================================
 
-# ==========================
-# Configuración de la página
-# ==========================
-st.set_page_config(
-    page_title="Predicción Precio de Viviendas",
-    page_icon="🏠",
-    layout="wide"
-)
+API_URL = "PEGA_AQUI_TU_PREDICTION_URL"
 
-st.title("🏠 Predicción de Precio Medio de Viviendas")
-st.markdown(
-    "Ingrese las características de la vivienda y presione **Predecir**."
-)
+API_TOKEN = st.secrets["DATAROBOT_API_TOKEN"]
 
-# ==========================
-# Entradas del usuario
-# ==========================
+# =====================================
+# INTERFAZ
+# =====================================
+
+st.title("🏠 Predicción de Precio de Viviendas")
 
 col1, col2 = st.columns(2)
 
 with col1:
-
-    longitud = st.slider(
-        "Longitud",
-        min_value=-125.0,
-        max_value=-114.0,
-        value=-119.0,
-        step=0.01
-    )
-
-    latitud = st.slider(
-        "Latitud",
-        min_value=32.0,
-        max_value=42.0,
-        value=36.0,
-        step=0.01
-    )
-
-    edad_mediana = st.number_input(
-        "Edad Mediana Vivienda",
-        min_value=1,
-        max_value=60,
-        value=25
-    )
+    longitud = st.number_input("Longitud", value=-122.23)
+    latitud = st.number_input("Latitud", value=37.88)
+    edad_mediana = st.number_input("Edad Mediana Vivienda", value=20)
 
     total_habitaciones = st.number_input(
         "Total Habitaciones",
-        min_value=1,
-        value=2500
+        value=1000
     )
 
 with col2:
-
     total_bedrooms = st.number_input(
         "Total Dormitorios",
-        min_value=1,
-        value=500
+        value=200
     )
 
     poblacion = st.number_input(
         "Población",
-        min_value=1,
-        value=1500
+        value=800
     )
 
     hogares = st.number_input(
         "Hogares",
-        min_value=1,
-        value=450
+        value=300
     )
 
     ingreso_mediano = st.number_input(
         "Ingreso Mediano",
-        min_value=0.0,
-        value=4.5,
-        step=0.1
+        value=4.5
     )
 
-# Variable categórica
 proximidad_oceano = st.selectbox(
     "Proximidad al Océano",
     [
@@ -97,30 +61,47 @@ proximidad_oceano = st.selectbox(
     ]
 )
 
-# ==========================
-# Botón de predicción
-# ==========================
+# =====================================
+# PREDICCIÓN
+# =====================================
 
-if st.button("🔍 Predecir"):
+if st.button("Predecir"):
 
-    datos = pd.DataFrame({
-        "Longitud": [longitud],
-        "Latitud": [latitud],
-        "Edad_mediana_vivienda": [edad_mediana],
-        "Total_Habitaciones": [total_habitaciones],
-        "total_bedrooms": [total_bedrooms],
-        "Poblacion": [poblacion],
-        "Hogares": [hogares],
-        "Ingreso_Mediano": [ingreso_mediano],
-        "Proximidad_Oceano": [proximidad_oceano]
-    })
+    datos = [{
+        "Longitud": longitud,
+        "Latitud": latitud,
+        "Edad_mediana_vivienda": edad_mediana,
+        "Total_Habitaciones": total_habitaciones,
+        "total_bedrooms": total_bedrooms,
+        "Poblacion": poblacion,
+        "Hogares": hogares,
+        "Ingreso_Mediano": ingreso_mediano,
+        "Proximidad_Oceano": proximidad_oceano
+    }]
 
-    # Predicción
-    prediccion = modelo.predict(datos)[0]
+    headers = {
+        "Authorization": f"Bearer {API_TOKEN}",
+        "Content-Type": "application/json"
+    }
 
-    st.success(
-        f"Precio medio estimado: ${prediccion:,.2f}"
+    response = requests.post(
+        API_URL,
+        headers=headers,
+        data=json.dumps(datos)
     )
 
-    st.subheader("Datos utilizados")
-    st.dataframe(datos)
+    if response.status_code == 200:
+
+        resultado = response.json()
+
+        st.success("Predicción realizada")
+
+        st.json(resultado)
+
+    else:
+
+        st.error(
+            f"Error {response.status_code}"
+        )
+
+        st.write(response.text)
